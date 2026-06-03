@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Caregenix BD Pipeline — Live Dashboard Prototype</title>
+<style>
+  :root{
+    /* Caregenix brand palette */
+    --brand-teal:#2BA39A;
+    --brand-teal-dark:#1F8A82;
+    --brand-teal-light:#5FB8B0;
+    --brand-teal-tint:#E6F4F2;
+    --brand-gray:#5A5A5A;
+    --brand-gray-soft:#8A8A8A;
+
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1F2937; --muted:#6B7280;
+    --line:#E2E8F0; --accent:var(--brand-teal); --green:#16a34a; --amber:#d97706; --red:#dc2626;
+    /* Mercury: brand teal gradient — dark at bulb, brighter rising */
+    --merc:linear-gradient(180deg,var(--brand-teal-light) 0%, var(--brand-teal) 55%, var(--brand-teal-dark) 100%);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding:24px}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;gap:24px;padding-bottom:14px;border-bottom:2px solid var(--brand-teal)}
+  .header-left{display:flex;gap:18px;align-items:center;flex:1;min-width:0}
+  .header-titles{min-width:0}
+  .header h1{margin:0;font-size:22px;font-weight:700;color:var(--brand-gray)}
+  .header .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .header .stamp{font-size:12px;color:var(--muted);flex-shrink:0}
+
+  /* Logo */
+  .logo{display:flex;align-items:center;gap:8px;flex-shrink:0;padding-right:18px;border-right:1px solid var(--line)}
+  .logo-mark{width:32px;height:32px;display:block}
+  .logo-text{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1;font-family:'Segoe UI',-apple-system,Helvetica,Arial,sans-serif}
+  .logo-care{color:var(--brand-teal)}
+  .logo-genix{color:var(--brand-gray)}
+
+  /* First-onboarded callout */
+  .milestone{margin:0 0 18px;padding:12px 16px;background:linear-gradient(90deg,#dcfce7 0%, #f0fdf4 100%);border-left:4px solid var(--green);border-radius:6px;font-size:13.5px;color:#14532d}
+  .milestone b{color:#14532d}
+
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card h2{margin:0 0 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-teal)}
+  .card h3{margin:0 0 12px;font-size:18px;font-weight:700;color:var(--brand-gray)}
+
+  /* Thermometer */
+  .thermos{display:flex;gap:32px;justify-content:center;align-items:flex-end;padding:16px 0 0}
+  .thermo{width:130px;display:flex;flex-direction:column;align-items:center}
+  .thermo .label{font-size:11px;color:var(--muted);text-align:center;font-weight:600;line-height:1.35;letter-spacing:.03em;text-transform:uppercase;min-height:32px;margin-bottom:6px}
+  .thermo .value{text-align:center;font-weight:700;font-size:20px;line-height:1.1;margin-bottom:2px}
+  .thermo .value small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:3px;text-transform:none;letter-spacing:0}
+  .thermo .tube{position:relative;width:34px;height:240px;background:#eef2f7;border:1px solid var(--line);border-radius:18px 18px 0 0;overflow:hidden;margin-top:10px}
+  .thermo .fill{position:absolute;bottom:0;left:0;right:0;background:var(--merc);transition:height .8s cubic-bezier(.22,1,.36,1);border-radius:0}
+  .thermo .bulb{width:60px;height:60px;background:var(--merc);background-position:bottom;border-radius:50%;margin-top:-8px;border:1px solid var(--line);box-shadow:inset 0 -6px 10px rgba(0,0,0,.15)}
+
+  /* Definition box */
+  .defbox{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:6px 0 14px;font-size:12.5px;line-height:1.5}
+  .defrow{display:flex;gap:10px;align-items:flex-start;padding:4px 0}
+  .defrow + .defrow{border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}
+  .defterm{flex-shrink:0;width:90px;font-weight:700;color:var(--ink);text-transform:uppercase;font-size:11px;letter-spacing:.05em;padding-top:2px}
+  .defdesc{color:var(--muted);flex:1}
+  .defdesc b{color:var(--ink)}
+
+  /* Committed indicator */
+  .committed{margin:14px 0 0;padding:10px 12px;background:var(--brand-teal-tint);border:1px solid var(--brand-teal-light);border-radius:6px;text-align:center;font-size:12px}
+  .committed-label{font-weight:700;color:var(--brand-teal-dark);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+  .committed-val{color:var(--brand-teal-dark)}
+  .committed-val b{font-size:15px;color:var(--brand-teal-dark)}
+
+  /* Goal bar */
+  .goal-line{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:14px}
+  .goal-line b{color:var(--ink)}
+  .goal-set{margin-top:10px;display:flex;gap:8px;align-items:center;font-size:12px;flex-wrap:wrap}
+  .goal-set input{width:90px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;font-size:12px}
+  .goal-set button{padding:4px 10px;border:1px solid var(--line);background:#fff;border-radius:5px;font-size:11.5px;cursor:pointer;color:var(--muted)}
+  .goal-set button:hover{background:var(--brand-teal-tint);color:var(--brand-teal-dark);border-color:var(--brand-teal-light)}
+
+  /* Right side */
+  .funnel{margin-top:8px}
+  .funnel-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .funnel-row:last-child{border:0}
+  .funnel-row .name{width:120px;font-weight:600;font-size:13px}
+  .funnel-row .bar{flex:1;height:18px;background:#eef2f7;border-radius:4px;position:relative;overflow:hidden}
+  .funnel-row .bar .b{height:100%;background:linear-gradient(90deg,var(--brand-teal-light),var(--brand-teal));transition:width .6s ease}
+  .funnel-row .meta{width:160px;text-align:right;font-size:12px;color:var(--muted)}
+  .funnel-row .meta b{color:var(--ink)}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  th{text-align:left;padding:8px 6px;border-bottom:2px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:hover td{background:#f8fafc}
+  tr.onboarded td{background:#f0fdf4 !important}
+  select{font:inherit;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:#fff;cursor:pointer;max-width:130px}
+  select.dirty{border-color:var(--brand-teal);background:var(--brand-teal-tint)}
+  .owner-sel{min-width:100px}
+  .actual-input{font:inherit;width:70px;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:#fff;text-align:right;font-variant-numeric:tabular-nums}
+  .actual-input:focus{border-color:var(--brand-teal);background:var(--brand-teal-tint);outline:none}
+  .actual-input.filled{border-color:var(--brand-teal);background:var(--brand-teal-tint);font-weight:600;color:var(--brand-teal-dark)}
+  .subhead{font-weight:400;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0}
+
+  /* Tab nav inside accounts card */
+  .tabs{display:flex;gap:4px;margin:8px 0 0;border-bottom:1px solid var(--line)}
+  .tab{padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0}
+  .tab.active{color:var(--brand-teal-dark);background:var(--brand-teal-tint);border-color:var(--brand-teal-light)}
+  .tab .count{background:#fff;color:var(--muted);font-weight:600;padding:1px 7px;border-radius:10px;font-size:11px;margin-left:6px}
+  .tab.active .count{color:var(--brand-teal-dark)}
+
+  /* Add-account form */
+  .add-bar{margin:8px 0 12px}
+  .btn-add{padding:6px 14px;border:1px solid var(--brand-teal);background:var(--brand-teal);color:#fff;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;letter-spacing:.02em}
+  .btn-add:hover{background:var(--brand-teal-dark);border-color:var(--brand-teal-dark)}
+  .add-form{display:flex;gap:8px;align-items:center;padding:10px 12px;background:var(--brand-teal-tint);border:1px solid var(--brand-teal-light);border-radius:6px;flex-wrap:wrap}
+  .add-form input,.add-form select{padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:12.5px;background:#fff}
+  .add-form input#newName{flex:1;min-width:180px}
+  .add-form input#newLives{width:90px;text-align:right}
+  .add-form select{min-width:110px}
+  .btn-add-save{padding:6px 14px;border:1px solid var(--brand-teal-dark);background:var(--brand-teal-dark);color:#fff;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer}
+  .btn-add-save:hover{background:#166962}
+  .btn-add-cancel{padding:6px 12px;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:5px;font-size:12px;cursor:pointer}
+  .btn-add-cancel:hover{background:#f1f5f9;color:var(--ink)}
+  .new-row td{background:var(--brand-teal-tint) !important;animation:flashIn 1.5s ease}
+  @keyframes flashIn{0%{background:#bef0eb}100%{background:var(--brand-teal-tint)}}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.green{background:#dcfce7;color:#166534}
+  .pill.amber{background:#fef3c7;color:#92400e}
+  .pill.red{background:#fee2e2;color:#991b1b}
+  .pill.gray{background:#e2e8f0;color:#475569}
+  .src-tag{font-size:10px;color:var(--muted);padding:1px 6px;background:#f1f5f9;border-radius:8px;margin-left:4px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .footer{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5}
+  .footer code{background:#eef2f7;padding:1px 5px;border-radius:3px;font-size:11px}
+  .note{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo" aria-label="Caregenix">
+      <svg class="logo-mark" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="0"  y="14" width="5" height="5" fill="#2BA39A"/>
+        <rect x="6"  y="20" width="5" height="5" fill="#2BA39A"/>
+        <rect x="6"  y="8"  width="5" height="5" fill="#2BA39A"/>
+        <rect x="12" y="14" width="5" height="5" fill="#2BA39A"/>
+        <rect x="12" y="2"  width="5" height="5" fill="#2BA39A" opacity=".55"/>
+        <rect x="0"  y="20" width="5" height="5" fill="#2BA39A" opacity=".55"/>
+      </svg>
+      <span class="logo-text"><span class="logo-care">care</span><span class="logo-genix">genix</span></span>
+    </div>
+    <div class="header-titles">
+      <h1>BD Pipeline — Live Dashboard</h1>
+      <div class="sub">Onboarded lives → goal of <b id="goalDisplay">33,885</b> lives (current weighted forecast across all tabs). Enter <b>Actual</b> lives per account as they go live and watch the thermometer fill.</div>
+    </div>
+  </div>
+  <div class="stamp">Prototype mock · as of May 29, 2026</div>
+</div>
+
+<div class="milestone">
+  🎉 <b>First account onboarded:</b> Faith Home Health &amp; Hospice (KS) — live with <b>197 active CCM/PCM patients</b> as of 5/28. First reference customer in production.
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: Thermometer -->
+  <div class="card">
+    <h2>Goal Thermometer</h2>
+    <h3>Onboarded Lives → Goal</h3>
+
+    <div class="defbox">
+      <div class="defrow"><span class="defterm">Goal</span><span class="defdesc">What we forecast we can close — sum of <i>Lives × stage win rate</i> across the pipeline. Defaults to <b id="forecastInline">33,885</b>. Edit it to lock a different target.</span></div>
+      <div class="defrow"><span class="defterm">Thermometer</span><span class="defdesc">Sum of <b>Actual Onboarded</b> lives ÷ Goal. Fills as you enter real delivered lives per account. 100% = we hit the goal.</span></div>
+      <div class="defrow"><span class="defterm">Actual col</span><span class="defdesc">Enter the <b>real</b> number of lives delivered once an account is live. Faith HH is pre-filled at 197 (live since 5/28).</span></div>
+    </div>
+
+    <div class="thermos">
+      <div class="thermo single">
+        <div class="label">Onboarded Lives</div>
+        <div class="value" id="oVal">0<small id="oPct">0% of goal</small></div>
+        <div class="tube"><div class="fill" id="oFill" style="height:0%"></div></div>
+        <div class="bulb"></div>
+      </div>
+    </div>
+
+    <div class="committed">
+      <div class="committed-label">In flight to onboarded</div>
+      <div class="committed-val"><b id="committedVal">12,050</b> lives committed (Closed-Won + Onboarding)</div>
+    </div>
+
+    <div class="goal-line"><span>Today: <b id="todayCount">0</b></span><span>Goal: <b id="goalRight">33,885</b></span></div>
+    <div class="goal-set">
+      <label>Goal:</label>
+      <input id="goalInput" type="number" value="33885" min="1000" step="500">
+      <span>lives</span>
+      <button id="resetGoal" type="button">Reset to forecast (<span id="forecastBtn">33,885</span>)</button>
+    </div>
+    <div class="note">Edit the goal to set a different target. Click Reset to snap back to today's weighted forecast.</div>
+  </div>
+
+  <!-- RIGHT: Funnel + Table -->
+  <div class="card">
+    <h2>Stage Funnel — Lives</h2>
+    <h3 id="totalsLine">0 lives across 0 accounts · 0 weighted</h3>
+    <div class="funnel" id="funnel"></div>
+
+    <h2 style="margin-top:22px">Edit Stage (simulates SharePoint List update)</h2>
+    <h3>Accounts</h3>
+
+    <div class="tabs" id="tabBar">
+      <div class="tab active" data-tab="all">All <span class="count" id="cnt-all">0</span></div>
+      <div class="tab" data-tab="main">Main Pipeline <span class="count" id="cnt-main">0</span></div>
+      <div class="tab" data-tab="prospect">Prospect Engagement <span class="count" id="cnt-prospect">0</span></div>
+      <div class="tab" data-tab="referral">Referrals &amp; Intros <span class="count" id="cnt-referral">0</span></div>
+    </div>
+
+    <div class="add-bar" style="margin-top:12px">
+      <button id="addBtn" type="button" class="btn-add">+ Add Account</button>
+      <div id="addForm" class="add-form" hidden>
+        <input type="text" id="newName" placeholder="Practice name" maxlength="60">
+        <select id="newOwner"></select>
+        <input type="number" id="newLives" placeholder="Lives" min="0" step="50">
+        <select id="newStage"></select>
+        <select id="newTab">
+          <option value="main">Main Pipeline</option>
+          <option value="prospect" selected>Prospect Engagement</option>
+          <option value="referral">Referrals &amp; Intros</option>
+        </select>
+        <button id="addSave" type="button" class="btn-add-save">Add</button>
+        <button id="addCancel" type="button" class="btn-add-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Account</th><th>Owner</th>
+          <th>Source</th>
+          <th class="num">Lives</th>
+          <th>Stage</th>
+          <th class="num">Forecast<br><span class="subhead">(weighted)</span></th>
+          <th class="num">Actual<br><span class="subhead">(onboarded)</span></th>
+          <th>Health</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  This is a static prototype of the live experience. In production: this page lives on your SharePoint site as an embedded Power BI report, the table is a SharePoint List, and changes from any owner update the thermometer for the entire team within ~15&nbsp;min.<br>
+  Stage win rates: Prospect 5% · Qualified 15% · Demo 30% · Proposal 50% · Negotiation 75% · Closed-Won 100% · Onboarding 100% · Onboarded 100%.<br>
+  Sources: <code>Practice Onboarding Updates 2.0</code> · <code>Prospect Engagment</code> · <code>Prospect Referrals &amp; Intros</code>
+</div>
+
+<script>
+const winRates = {
+  "Prospect":0.05, "Qualified":0.15, "Demo":0.30, "Proposal":0.50,
+  "Negotiation":0.75, "Closed-Won":1.0, "Onboarding":1.0, "Onboarded":1.0
+};
+const stages = Object.keys(winRates);
+const ownerRoster = ["Khat","Irfan","Gio","Jose","Reynold","Jeremy","Riz","Faisal","Arnab Bose","Sameer","Brady/Daniel","Steve H.","(unassigned)"];
+
+// Seed data — sourced from all 3 tabs of "Onboarding Pipeline - Patient Est" workbook
+// tab: "main" = Practice Onboarding Updates 2.0
+//      "prospect" = Prospect Engagment (Irfan/Gio/Steve H. pipelines)
+//      "referral" = Prospect Referrals & Intros
+const accounts = [
+  // ===== MAIN PIPELINE (26 accounts) =====
+  {n:1,  tab:"main", name:"Desert Valley Hospital", owner:"Irfan", state:"CA", lives:3500, stage:"Qualified", health:"green", actual:0},
+  {n:2,  tab:"main", name:"Providence Hospital - Nicole Haglund", owner:"Gio", state:"NE", lives:3500, stage:"Negotiation", health:"amber", actual:0},
+  {n:3,  tab:"main", name:"Midplains Center - Chase Francl", owner:"Gio", state:"NE", lives:2500, stage:"Negotiation", health:"amber", actual:0},
+  {n:4,  tab:"main", name:"Box Butte - Brian Shelmadine", owner:"Gio", state:"NE", lives:3500, stage:"Negotiation", health:"amber", actual:0},
+  {n:5,  tab:"main", name:"Roseland Hospital - Khurruma Khan", owner:"Irfan", state:"IL", lives:2500, stage:"Qualified", health:"amber", actual:0},
+  {n:6,  tab:"main", name:"Loreta Hospital", owner:"Irfan", state:"IL", lives:5000, stage:"Closed-Won", health:"amber", actual:0},
+  {n:7,  tab:"main", name:"Insight Corp", owner:"Irfan", state:"IL", lives:2500, stage:"Negotiation", health:"green", actual:0},
+  {n:9,  tab:"main", name:"Aledade", owner:"Irfan", state:"MD", lives:5000, stage:"Qualified", health:"red", actual:0},
+  {n:10, tab:"main", name:"Effective Psych Care", owner:"Arnab Bose", state:"MI", lives:500, stage:"Onboarding", health:"green", actual:0},
+  {n:11, tab:"main", name:"Dr. Stephen Erle (7 Clinics)", owner:"Brady/Daniel", state:"AZ", lives:2500, stage:"Negotiation", health:"amber", actual:0},
+  {n:12, tab:"main", name:"Nicholson Clinic - Dr. Gonzales", owner:"Irfan", state:"TX", lives:500, stage:"Negotiation", health:"amber", actual:0},
+  {n:13, tab:"main", name:"Valley Wise Hospital", owner:"(unassigned)", state:"AZ", lives:10000, stage:"Negotiation", health:"red", actual:0},
+  {n:14, tab:"main", name:"Gen Harp (Christian Community Health)", owner:"Irfan", state:"IL", lives:3000, stage:"Qualified", health:"amber", actual:0},
+  {n:15, tab:"main", name:"Dr. Salma Mazhar", owner:"Jose", state:"TX", lives:250, stage:"Negotiation", health:"green", actual:0},
+  {n:16, tab:"main", name:"Dr. Lorinda Torres", owner:"Jose", state:"TX", lives:50, stage:"Negotiation", health:"green", actual:0},
+  {n:17, tab:"main", name:"Dr. Neil Phung MD", owner:"Jose", state:"TX", lives:50, stage:"Negotiation", health:"green", actual:0},
+  {n:18, tab:"main", name:"Dr. Maryam Zamanian", owner:"Jose", state:"TX", lives:100, stage:"Negotiation", health:"amber", actual:0},
+  {n:19, tab:"main", name:"Dr. Hong Xiao", owner:"Jose", state:"TX", lives:300, stage:"Negotiation", health:"amber", actual:0},
+  {n:20, tab:"main", name:"Dr. Aasin Tareen", owner:"Irfan", state:"CA", lives:500, stage:"Onboarding", health:"green", actual:0},
+  {n:21, tab:"main", name:"Dr. Mohamed Gismalla", owner:"Irfan", state:"MI", lives:6000, stage:"Closed-Won", health:"red", actual:0},
+  {n:23, tab:"main", name:"Dr. Sanjivan Singh Kohli", owner:"Sameer", state:"CA", lives:100, stage:"Negotiation", health:"red", actual:0},
+  {n:24, tab:"main", name:"Dr. Shazia Hamid", owner:"Sameer", state:"CA", lives:100, stage:"Negotiation", health:"red", actual:0},
+  // Faith HH — first onboarded account, 197 active CCM/PCM patients as of 5/28
+  {n:26, tab:"main", name:"Faith Home Health & Hospice", owner:"Reynold", state:"KS", lives:197, stage:"Onboarded", health:"green", actual:197},
+  {n:27, tab:"main", name:"Choice Health", owner:"Irfan", state:"NM", lives:50, stage:"Onboarding", health:"green", actual:0},
+  {n:28, tab:"main", name:"Sierra Home Care", owner:"Reynold", state:"NM", lives:50, stage:"Negotiation", health:"red", actual:0},
+  {n:29, tab:"main", name:"Intelicare", owner:"Reynold", state:"NM", lives:50, stage:"Negotiation", health:"red", actual:0},
+
+  // ===== PROSPECT ENGAGMENT — Irfan/Faisal house pipeline =====
+  {n:30, tab:"prospect", name:"Rad City CCRX", owner:"Faisal", state:"NY", lives:200000, stage:"Qualified", health:"green", actual:0},
+  {n:31, tab:"prospect", name:"University of Chicago", owner:"Faisal", state:"IL", lives:5000, stage:"Qualified", health:"green", actual:0},
+  {n:32, tab:"prospect", name:"Hospitals and ACOs (FL/TX)", owner:"Faisal", state:"FL/TX", lives:5000, stage:"Proposal", health:"amber", actual:0},
+  {n:33, tab:"prospect", name:"Live Med", owner:"Faisal", state:"IL", lives:2500, stage:"Qualified", health:"green", actual:0},
+  {n:34, tab:"prospect", name:"Advocate Good Sam", owner:"Khat", state:"IL", lives:5000, stage:"Qualified", health:"green", actual:0},
+  {n:35, tab:"prospect", name:"Schools (Seamless Connect)", owner:"Riz", state:"TX", lives:25000, stage:"Negotiation", health:"green", actual:0},
+  {n:36, tab:"prospect", name:"RML Specialty Hospital", owner:"Khat", state:"IL", lives:0, stage:"Prospect", health:"amber", actual:0},
+
+  // ===== PROSPECT ENGAGMENT — Gio Nebraska pipeline =====
+  {n:37, tab:"prospect", name:"Garden County Health Services", owner:"Gio", state:"NE", lives:1500, stage:"Negotiation", health:"green", actual:0},
+  {n:38, tab:"prospect", name:"Kearney County Health Services", owner:"Gio", state:"NE", lives:1500, stage:"Negotiation", health:"green", actual:0},
+  {n:39, tab:"prospect", name:"Falls City Hospital", owner:"Gio", state:"NE", lives:1500, stage:"Negotiation", health:"green", actual:0},
+  {n:40, tab:"prospect", name:"Perkins County Health Services", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+  {n:41, tab:"prospect", name:"Gothenburg Health", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+  {n:42, tab:"prospect", name:"Morrill County Community Hospital", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+  {n:43, tab:"prospect", name:"Gordon Memorial Hospital", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+  {n:44, tab:"prospect", name:"Cherry County Community Hospital", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+  {n:45, tab:"prospect", name:"Avera Health", owner:"Gio", state:"NE", lives:1500, stage:"Prospect", health:"green", actual:0},
+
+  // ===== PROSPECT ENGAGMENT — Steve H. pipeline =====
+  {n:46, tab:"prospect", name:"Rula Health", owner:"Steve H.", state:"CA", lives:100000, stage:"Qualified", health:"green", actual:0},
+
+  // ===== PROSPECT REFERRALS & INTROS =====
+  {n:47, tab:"referral", name:"Piedmont Healthcare (Dr. Rajper)", owner:"Irfan", state:"NC", lives:2000, stage:"Prospect", health:"red", actual:0},
+  {n:48, tab:"referral", name:"Norton Hospital Louisville (Dr. Juneja)", owner:"Irfan", state:"KY", lives:5000, stage:"Prospect", health:"amber", actual:0},
+  {n:49, tab:"referral", name:"GVL Provider List (~100 providers)", owner:"Irfan", state:"—", lives:0, stage:"Prospect", health:"green", actual:0}
+];
+
+const fmt = n => n.toLocaleString();
+const healthPill = h => ({green:'<span class="pill green">🟢 On track</span>',amber:'<span class="pill amber">🟡 Watch</span>',red:'<span class="pill red">🔴 Stalled</span>',gray:'<span class="pill gray">⚪ Hold</span>'})[h];
+const sourceLabel = t => ({main:'Main',prospect:'Prospect',referral:'Referral'})[t] || t;
+
+let activeTab = 'all';
+
+function ownerOptionsHTML(currentOwner){
+  const opts = ownerRoster.map(o => `<option value="${o}" ${o===currentOwner?'selected':''}>${o}</option>`);
+  if (currentOwner && !ownerRoster.includes(currentOwner) && currentOwner !== 'Other') {
+    opts.push(`<option value="${currentOwner}" selected>${currentOwner}</option>`);
+  }
+  opts.push('<option value="Other">Other…</option>');
+  return opts.join('');
+}
+
+function visibleAccounts(){
+  return activeTab === 'all' ? accounts : accounts.filter(a => a.tab === activeTab);
+}
+
+function renderTable(){
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  visibleAccounts().forEach((a) => {
+    const i = accounts.indexOf(a);
+    const w = a.lives * winRates[a.stage];
+    const stageOpts = stages.map(s => `<option value="${s}" ${s===a.stage?'selected':''}>${s}</option>`).join('');
+    const ownerOpts = ownerOptionsHTML(a.owner);
+    const actualFilled = a.actual > 0 ? ' filled' : '';
+    const onbCls = a.stage === 'Onboarded' ? ' class="onboarded"' : '';
+    tb.insertAdjacentHTML('beforeend', `
+      <tr${onbCls}>
+        <td>${a.n}</td>
+        <td>${a.name}${a.state?` <span class="src-tag">${a.state}</span>`:''}</td>
+        <td><select data-i="${i}" class="owner-sel">${ownerOpts}</select></td>
+        <td><span class="src-tag">${sourceLabel(a.tab)}</span></td>
+        <td class="num">${fmt(a.lives)}</td>
+        <td><select data-i="${i}" class="stage-sel">${stageOpts}</select></td>
+        <td class="num" id="w${i}">${fmt(Math.round(w))}</td>
+        <td class="num"><input type="number" min="0" step="50" data-i="${i}" class="actual-input${actualFilled}" value="${a.actual||''}" placeholder="0"></td>
+        <td>${healthPill(a.health)}</td>
+      </tr>
+    `);
+  });
+  // Re-bind
+  tb.querySelectorAll('.stage-sel').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const i = +e.target.dataset.i;
+      const newStage = e.target.value;
+      const a = accounts[i];
+      if (newStage === 'Onboarded' && a.actual === 0) {
+        a.actual = a.lives;
+        const inp = tb.querySelector(`.actual-input[data-i="${i}"]`);
+        if (inp) { inp.value = a.lives; inp.classList.add('filled'); }
+      }
+      a.stage = newStage;
+      e.target.classList.add('dirty');
+      renderTable();
+      recalc();
+    });
+  });
+  function onOwnerChange(e){
+    const i = +e.target.dataset.i;
+    let v = e.target.value;
+    if (v === 'Other') {
+      const custom = prompt('Enter owner name:', '');
+      if (custom && custom.trim()) {
+        v = custom.trim();
+        accounts[i].owner = v;
+        const parent = e.target.parentNode;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `<select data-i="${i}" class="owner-sel dirty">${ownerOptionsHTML(v)}</select>`;
+        const fresh = wrapper.firstChild;
+        fresh.addEventListener('change', onOwnerChange);
+        parent.replaceChild(fresh, e.target);
+        return;
+      } else {
+        e.target.value = accounts[i].owner;
+        return;
+      }
+    }
+    accounts[i].owner = v;
+    e.target.classList.add('dirty');
+  }
+  tb.querySelectorAll('.owner-sel').forEach(sel => sel.addEventListener('change', onOwnerChange));
+  tb.querySelectorAll('.actual-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.i;
+      const v = +e.target.value || 0;
+      accounts[i].actual = v;
+      e.target.classList.toggle('filled', v > 0);
+      recalc();
+    });
+  });
+}
+
+function recalc(){
+  let total=0, weighted=0, actualOnboarded=0, committed=0;
+  const stageAgg = {};
+  stages.forEach(s => stageAgg[s] = {lives:0,weighted:0,count:0});
+  accounts.forEach((a,i) => {
+    const w = a.lives * winRates[a.stage];
+    total += a.lives;
+    weighted += w;
+    actualOnboarded += (a.actual || 0);
+    if(a.stage === 'Closed-Won' || a.stage === 'Onboarding') committed += a.lives;
+    stageAgg[a.stage].lives += a.lives;
+    stageAgg[a.stage].weighted += w;
+    stageAgg[a.stage].count += 1;
+    const cell = document.getElementById('w'+i);
+    if(cell) cell.textContent = fmt(Math.round(w));
+  });
+
+  const goal = +document.getElementById('goalInput').value || Math.round(weighted);
+  const forecast = Math.round(weighted);
+  document.getElementById('goalDisplay').textContent = fmt(goal);
+  document.getElementById('forecastInline').textContent = fmt(forecast);
+  document.getElementById('forecastBtn').textContent = fmt(forecast);
+  document.getElementById('committedVal').textContent = fmt(committed);
+  document.getElementById('todayCount').textContent = fmt(actualOnboarded);
+  document.getElementById('goalRight').textContent = fmt(goal);
+
+  const rawPct = actualOnboarded / goal * 100;
+  const fillPct = Math.min(100, rawPct);
+  document.getElementById('oFill').style.height = fillPct + '%';
+  const pctLabel = rawPct > 100 ? `${rawPct.toFixed(0)}% — exceeded goal!` : `${rawPct.toFixed(1)}% of goal`;
+  document.getElementById('oVal').innerHTML = fmt(actualOnboarded) + '<small>' + pctLabel + '</small>';
+
+  document.getElementById('totalsLine').textContent =
+    `${fmt(total)} lives across ${accounts.length} accounts · ${fmt(forecast)} weighted forecast`;
+
+  // Funnel
+  const f = document.getElementById('funnel');
+  f.innerHTML = '';
+  const maxLives = Math.max(...stages.map(s => stageAgg[s].lives), 1);
+  stages.forEach(s => {
+    const d = stageAgg[s];
+    if (d.count === 0 && s !== 'Onboarded') return;
+    const pct = d.lives / maxLives * 100;
+    f.insertAdjacentHTML('beforeend', `
+      <div class="funnel-row">
+        <div class="name">${s}</div>
+        <div class="bar"><div class="b" style="width:${pct}%"></div></div>
+        <div class="meta"><b>${fmt(d.lives)}</b> lives · ${d.count} acct · ${fmt(Math.round(d.weighted))} wtd</div>
+      </div>
+    `);
+  });
+
+  // Tab counts
+  document.getElementById('cnt-all').textContent = accounts.length;
+  document.getElementById('cnt-main').textContent = accounts.filter(a=>a.tab==='main').length;
+  document.getElementById('cnt-prospect').textContent = accounts.filter(a=>a.tab==='prospect').length;
+  document.getElementById('cnt-referral').textContent = accounts.filter(a=>a.tab==='referral').length;
+}
+
+// ===== Tab switching =====
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    activeTab = t.dataset.tab;
+    renderTable();
+  });
+});
+
+// ===== Goal =====
+document.getElementById('goalInput').addEventListener('input', recalc);
+document.getElementById('resetGoal').addEventListener('click', () => {
+  let weighted = 0;
+  accounts.forEach(a => weighted += a.lives * winRates[a.stage]);
+  document.getElementById('goalInput').value = Math.round(weighted);
+  recalc();
+});
+
+// ===== Add Account form =====
+const addBtn = document.getElementById('addBtn');
+const addForm = document.getElementById('addForm');
+const newName = document.getElementById('newName');
+const newOwner = document.getElementById('newOwner');
+const newLives = document.getElementById('newLives');
+const newStage = document.getElementById('newStage');
+const newTab = document.getElementById('newTab');
+
+newOwner.innerHTML = '<option value="" disabled selected>Owner…</option>' +
+  ownerRoster.map(o => `<option value="${o}">${o}</option>`).join('') +
+  '<option value="Other">Other…</option>';
+newStage.innerHTML = stages.map(s =>
+  `<option value="${s}" ${s==='Qualified'?'selected':''}>${s}</option>`
+).join('');
+
+function resetAddForm(){
+  newName.value = ''; newLives.value = '';
+  newOwner.value = ''; newStage.value = 'Qualified'; newTab.value = 'prospect';
+}
+
+addBtn.addEventListener('click', () => {
+  addForm.hidden = false;
+  addBtn.style.display = 'none';
+  newName.focus();
+});
+
+document.getElementById('addCancel').addEventListener('click', () => {
+  addForm.hidden = true;
+  addBtn.style.display = '';
+  resetAddForm();
+});
+
+document.getElementById('addSave').addEventListener('click', () => {
+  const name = newName.value.trim();
+  const lives = +newLives.value || 0;
+  let owner = newOwner.value;
+  const stage = newStage.value;
+  const tab = newTab.value;
+
+  if (!name) { alert('Practice name is required.'); newName.focus(); return; }
+  if (!owner) { alert('Pick an owner.'); newOwner.focus(); return; }
+
+  if (owner === 'Other') {
+    const custom = prompt('Enter owner name:', '');
+    if (!custom || !custom.trim()) return;
+    owner = custom.trim();
+  }
+
+  const nextNum = Math.max(...accounts.map(a => a.n)) + 1;
+  accounts.push({
+    n: nextNum, tab, name, owner, state:"", lives, stage,
+    health: 'green', actual: 0
+  });
+
+  addForm.hidden = true;
+  addBtn.style.display = '';
+  resetAddForm();
+  // Switch to the tab where we added so the user sees it
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  const tEl = document.querySelector(`.tab[data-tab="${tab}"]`) || document.querySelector('.tab[data-tab="all"]');
+  tEl.classList.add('active');
+  activeTab = tEl.dataset.tab;
+  renderTable();
+  recalc();
+
+  const tb = document.getElementById('tbody');
+  const lastRow = tb.querySelector('tr:last-child');
+  if (lastRow) lastRow.classList.add('new-row');
+});
+
+// Init
+renderTable();
+recalc();
+// After recalc, snap the visible goal back to the editable input value (which is also the forecast)
+document.getElementById('goalInput').value = 33885;
+recalc();
+</script>
+</body>
+</html>
